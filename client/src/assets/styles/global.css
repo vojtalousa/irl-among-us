@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&display=swap');
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: "Amatic SC", serif;
+    font-weight: 700;
+    font-style: normal;
+    font-size: 30px;
+    background-color: black;
+}
+
+p {
+    margin: 0;
+    font-size: 30px;
+    text-align: center;
+}
+
+#app {
+    min-height: 100dvh;
+    display: grid;
+    grid-template-columns: minmax(min-content, 400px);
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+}
+
+@keyframes flash {
+    0% {
+        color: #CE1D1D;
+    }
+    49% {
+        color: #CE1D1D;
+    }
+    50% {
+        color: #FFE102;
+    }
+    100% {
+        color: #FFE102;
+    }
+}
+.flash-text {
+    animation: flash 1s infinite;
+}
