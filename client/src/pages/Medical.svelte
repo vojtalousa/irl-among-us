@@ -44,9 +44,7 @@
         {:else}
             <Panel>
                 <p class="flash-text">
-                    Sabotáž: {gameState.sabotage.id} (
-                    <Countdown endTime={gameState.sabotage.end}/>
-                    s)
+                    Sabotáž: {gameState.sabotage.id} (<Countdown endTime={gameState.sabotage.end}/>s)
                 </p>
             </Panel>
         {/if}

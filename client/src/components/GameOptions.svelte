@@ -11,7 +11,6 @@
     let reactorSabotageLength = $state(2.5 * 60)
     let commsSabotageLength = $state(60)
     let sabotageCooldown = $state(2 * 60)
-    $inspect(impostorCount, meetingLength, taskCount, oxygenSabotageLength, reactorSabotageLength, commsSabotageLength, sabotageCooldown)
 
     const startGame = () => {
         if (!impostorCount || !meetingLength || !taskCount || !oxygenSabotageLength ||

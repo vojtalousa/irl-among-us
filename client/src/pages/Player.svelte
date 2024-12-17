@@ -10,6 +10,7 @@
     import Login from "../components/Login.svelte";
     import Panel from "../components/Panel.svelte";
     import dead from "../assets/images/dead.svg";
+    import Disconnected from "../components/Disconnected.svelte";
     import meetingMp3 from "../assets/sounds/meeting.mp3";
     import sabotageMp3 from "../assets/sounds/sabotage.mp3";
 
@@ -61,6 +62,7 @@
     });
 </script>
 
+<Disconnected {socket} />
 <Background/>
 <main>
     {#if gameState.section === 'end'}
@@ -77,11 +79,9 @@
         {:else if gameState.section === 'meeting-wait'}
             <MeetingWait/>
         {:else if gameState.section === 'meeting' || meetingResults.display}
-            <Meeting players={gameState.players} voteId={clientState.vote} endTime={gameState.meetingEnd}
-                     votes={gameState.votes} {meetingResults} dead={clientState.dead} {socket}/>
+            <Meeting {...gameState} {...clientState} {meetingResults} {socket}/>
         {:else if gameState.section === 'game'}
-            <Game role={clientState.role} tasks={clientState.tasks} dead={clientState.dead} {wrongPasswordDisplayed}
-                  sabotage={gameState.sabotage} impostors={clientState.impostors} {socket} sabotageCooldownEnd={gameState.sabotageCooldownEnd}/>
+            <Game {...gameState} {...clientState} {wrongPasswordDisplayed} {socket}/>
         {:else}
             <Panel><p>Načítání...</p></Panel>
         {/if}
