@@ -10,6 +10,8 @@
     import Login from "../components/Login.svelte";
     import Panel from "../components/Panel.svelte";
     import dead from "../assets/images/dead.svg";
+    import meetingMp3 from "../assets/sounds/meeting.mp3";
+    import sabotageMp3 from "../assets/sounds/sabotage.mp3";
 
     let socket = $state(null)
     let gameState = $state({})
@@ -17,9 +19,25 @@
     let meetingResults = $state({display: false, ejected: null});
     let wrongPasswordDisplayed = $state(false);
 
+    const meetingSound = new Audio(meetingMp3);
+    const sabotageSound = new Audio(sabotageMp3);
+    sabotageSound.loop = true;
+
     onMount(() => {
         socket = getSocket()
         socket.on('sync-game', (newState) => {
+            if (newState.sabotage && !gameState.sabotage) {
+                sabotageSound.currentTime = 0;
+                sabotageSound.play();
+            } else if (!newState.sabotage && gameState.sabotage) {
+                sabotageSound.pause();
+            }
+
+            if (newState.section === 'meeting-wait' && gameState.section === 'game') {
+                meetingSound.currentTime = 0;
+                meetingSound.play();
+            }
+
             gameState = newState
         });
         socket.on('sync-client', (newState) => {

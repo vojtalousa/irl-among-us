@@ -5,6 +5,7 @@
 
     let {players = [], socket, voteId, endTime, votes, dead, meetingResults} = $props();
 
+    const skip = { name: 'Přeskočit hlasování', id: 'skip', dead: false };
     const vote = (id) => {
         if (id === voteId) socket.emit('vote', null);
         else socket.emit('vote', id);
@@ -22,7 +23,7 @@
     <Panel>
         <Display>
             <div class="player-list">
-                {#each players as player}
+                {#each [skip, ...players] as player}
                     <div class="player" class:disabled={dead || player.dead}>
                         {#if meetingResults.display !== true}
                             <button class="checkbox" id={player.id}

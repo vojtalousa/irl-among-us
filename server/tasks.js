@@ -1,10 +1,4 @@
-export const impostorCount = 1
-export const meetingLength = 15
-export const meetingCooldown = 15
-export const taskCount = 2
-export const sabotageLengths = {oxygen: 200000, reactor: 200000, comms: 20}
-export const sabotageCooldown = 20
-export const tasks = [
+export default [
     {description: 'Align Engine Output', password: '1595'},
     {description: 'Align Telescope', password: '7756'},
     {description: 'Assemble Artifact', password: '4975'},

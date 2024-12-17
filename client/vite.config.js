@@ -12,6 +12,7 @@ export default defineConfig({
         oxygen: 'oxygen.html',
         reactor: 'reactor.html',
         secret: 'secret.html',
+        medical: 'medical.html',
       }
     },
     outDir: 'build'

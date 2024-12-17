@@ -1,8 +1,8 @@
-import * as options from "./options.js";
+import tasks from './tasks.js';
 import {randSelection} from "./helpers.js";
 
 export default class Game {
-    constructor(io) {
+    constructor(io, options) {
         this.state = {
             section: 'lobby',
             players: [],
@@ -17,6 +17,7 @@ export default class Game {
         this.sabotageTimeout = null;
         this.sabotagePushed = 0;
         this.io = io;
+        this.options = options;
     }
 
     syncPlayer(id) {
@@ -27,7 +28,7 @@ export default class Game {
         this.state.section = 'game';
         console.log('Starting game');
 
-        const {chosen: impostors, others: crewmates} = randSelection(players, options.impostorCount);
+        const {chosen: impostors, others: crewmates} = randSelection(players, this.options.impostorCount);
         console.log('Impostors', impostors);
         console.log('Crewmates', crewmates);
 
@@ -38,11 +39,11 @@ export default class Game {
             this.players[id] = {name, role: 'impostor', impostors};
         });
         players.forEach(({id}) => {
-            const remainingTasks = options.tasks.map(({description}, index) => {
+            const remainingTasks = tasks.map(({description}, index) => {
                 return {id: index, description, completed: false}
             });
             const playerTasks = [];
-            for (let i = 0; i < options.taskCount; i++) {
+            for (let i = 0; i < this.options.taskCount; i++) {
                 const index = Math.floor(Math.random() * remainingTasks.length);
                 const task = remainingTasks.splice(index, 1)[0];
                 if (!task) break
@@ -52,7 +53,7 @@ export default class Game {
             this.syncPlayer(id);
         });
         this.state.players = players.map(({id, name}) => ({id, name}));
-        this.state.tasks.total = options.taskCount * crewmates.length;
+        this.state.tasks.total = this.options.taskCount * crewmates.length;
 
         this.io.to('joined').emit('sync-game', this.state);
     }
@@ -98,8 +99,8 @@ export default class Game {
 
     startMeeting() {
         this.state.section = 'meeting';
-        this.state.meetingEnd = Date.now() + options.meetingLength * 1000;
-        this.meetingTimeout = setTimeout(() => this.endMeeting(), options.meetingLength * 1000);
+        this.state.meetingEnd = Date.now() + this.options.meetingLength * 1000;
+        this.meetingTimeout = setTimeout(() => this.endMeeting(), this.options.meetingLength * 1000);
         this.io.to('joined').emit('sync-game', this.state);
     }
 
@@ -132,7 +133,7 @@ export default class Game {
 
         let ejectedId = mostVoted.length === 1 ? mostVoted[0][0] : null;
         console.log('Ejected', ejectedId);
-        if (ejectedId) this.killPlayer(ejectedId);
+        if (ejectedId && ejectedId !== 'skip') this.killPlayer(ejectedId);
 
         if (this.state.section !== 'end') this.state.section = 'game';
         this.io.to('players').emit('meeting-end', this.players[ejectedId]?.name);
@@ -140,7 +141,7 @@ export default class Game {
     }
 
     completeTask(playerId, taskId, password) {
-        const task = options.tasks[taskId];
+        const task = tasks[taskId];
         const playerTask = this.players[playerId].tasks.find((task) => task?.id === taskId);
         if (!task || !playerTask || playerTask.completed) return;
         if (task.password !== password) {
@@ -158,10 +159,10 @@ export default class Game {
 
     startSabotage(sabotageId) {
         if (this.state.sabotage || this.state.sabotageCooldownEnd > Date.now()) return;
-        const sabotageLength = options.sabotageLengths[sabotageId] * 1000;
+        const sabotageLength = this.options.sabotageLengths[sabotageId] * 1000;
         if (!sabotageLength) return;
         this.state.sabotage = {id: sabotageId, end: Date.now() + sabotageLength};
-        this.state.sabotageCooldownEnd = Date.now() + options.sabotageCooldown * 1000;
+        this.state.sabotageCooldownEnd = Date.now() + this.options.sabotageCooldown * 1000;
         this.sabotagePushed = 0;
         console.log('Sabotage', this.state.sabotage);
         this.sabotageTimeout = setTimeout(() => {

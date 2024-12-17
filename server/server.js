@@ -33,7 +33,7 @@ io.on('connection', async (socket) => {
             socket.join('joined');
             socket.on('emergency-meeting', () => game?.triggerMeeting());
             socket.on('start-meeting', () => game?.startMeeting());
-            socket.on('start-game', async () => {
+            socket.on('start-game', async (options) => {
                 const waitingSockets = await io.in('lobby').fetchSockets()
                 const waitingSocketIds = waitingSockets.map((socket) => socket.data.id);
                 const players = [...new Set(waitingSocketIds)].map(id => {
@@ -43,7 +43,7 @@ io.on('connection', async (socket) => {
                     return {id, name: clients[id].name}
                 });
 
-                game = new Game(io);
+                game = new Game(io, options);
                 game.start(players);
             });
             socket.on('end-game', () => {

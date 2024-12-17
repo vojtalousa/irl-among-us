@@ -202,7 +202,7 @@
     }
 
     .menu-container {
-        position: absolute;
+        position: fixed;
         bottom: 10px;
         left: 10px;
         width: calc(100vw - 20px);

@@ -5,7 +5,7 @@
     import End from "../components/End.svelte";
     import Background from "../components/Background.svelte";
     import Panel from "../components/Panel.svelte";
-    import Display from "../components/Display.svelte";
+    import GameOptions from "../components/GameOptions.svelte";
 
     let socket = $state(null)
     let gameState = $state({})
@@ -24,9 +24,7 @@
     {#if gameState.section === 'end'}
         <End winners={gameState.winners}/>
     {:else if gameState.section === 'lobby'}
-        <Panel>
-            <button class="start-game" onclick={() => socket.emit('start-game')}>Spustit Hru</button>
-        </Panel>
+        <GameOptions socket={socket}/>
     {:else}
         {#if gameState.sabotage?.id !== 'comms'}
             <Panel --padding-bottom="25px" --padding-top="18px"
@@ -36,19 +34,6 @@
                     <progress max={gameState.tasks?.total || 0} value={gameState.tasks?.done || 0}></progress>
                 </div>
             </Panel>
-            <div class="player-list-container">
-                <Panel>
-                    <Display>
-                        <div class="display-list">
-                            <p>Status Hráčů:</p>
-                            {#each gameState.players as player}
-                                <p class="player-status">{player.name} <span
-                                        class:dead={player.dead}>{player.dead ? 'DEAD' : 'OK'}</span></p>
-                            {/each}
-                        </div>
-                    </Display>
-                </Panel>
-            </div>
         {/if}
         <Panel>
             {#if gameState.sabotage}
@@ -73,42 +58,9 @@
 
 <style>
     main {
-        display: grid;
-        grid-template-columns: max-content max-content;
-        grid-template-rows: min-content 1fr;
-        gap: 10px;
-        justify-content: center;
-    }
-
-    .player-list-container {
-        grid-row: 1 / 3;
-    }
-    .player-list-container :global(div) {
-        height: 100%;
-    }
-
-    .display-list {
         display: flex;
         flex-direction: column;
-        gap: 5px;
-        max-height: 500px;
-        max-width: 220px;
-        width: 200px;
-        overflow-x: hidden;
-        overflow-y: auto;
-        text-overflow: ellipsis;
-    }
-
-    .display-list p {
-        text-align: start;
-    }
-
-    .player-status span {
-        color: #0EA920;
-    }
-
-    .player-status span.dead {
-        color: #D70C0C;
+        gap: 10px;
     }
 
     .task-progress {
@@ -179,10 +131,6 @@
 
     button:hover {
         transform: scale(1.01);
-    }
-
-    .start-game {
-        padding: 10px 75px;
     }
 
     .meeting-button-container button {
