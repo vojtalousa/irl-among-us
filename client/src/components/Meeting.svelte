@@ -3,7 +3,7 @@
     import Panel from "./Panel.svelte";
     import Display from "./Display.svelte";
 
-    let {players = [], socket, voteId, endTime, votes, dead, meetingResults} = $props();
+    let {players = [], socket, voteId, meetingEnd, votes, dead, meetingResults} = $props();
 
     const skip = { name: 'Přeskočit hlasování', id: 'skip', dead: false };
     const vote = (id) => {
@@ -17,7 +17,7 @@
         {#if meetingResults.display}
             <p>{meetingResults.ejected ? `${meetingResults.ejected} byl vyhozen` : 'Nikdo nebyl vyhozen'}</p>
         {:else}
-            <p>Hlasování: <Countdown {endTime}/>s</p>
+            <p>Hlasování: <Countdown endTime={meetingEnd}/>s</p>
         {/if}
     </Panel>
     <Panel>
