@@ -11,7 +11,6 @@ export default [
     {description: 'Sisyfos (Uč. 11)', password: '427808'},
     {description: 'Hodina informatiky (Uč. 15)', password: '458791'},
     {description: 'Pomalý internet (Uč. 15)', password: '761196'},
-    {description: 'Hej Žaneta (Uč. 18)', password: '308851'},
     {description: 'Clean Vent (Uč. 23)', password: '930604'},
     {description: '9+10? (Uč. 23)', password: '376144'},
     {description: 'Water bucket (Biologie)', password: '945222'},
