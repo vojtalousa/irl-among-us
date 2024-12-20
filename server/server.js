@@ -21,15 +21,19 @@ io.on('connection', async (socket) => {
     try {
         console.log('connection from', socket.handshake.auth.id);
         let id = socket.handshake.auth.id;
-        if (!id) {
-            console.log('new connection, assigning id');
-            id = await socket.timeout(5000).emitWithAck('id', uuid());
-        }
-
         socket.data.id = id;
 
         socket.emit('sync-game', game?.state || {section: 'lobby'});
-        if (id === 'admin') {
+        if (!id) {
+            socket.on('set-name', (name) => {
+                const id = name
+                clients[id] = {name: false, joined: false};
+                socket.emit('sync-client', clients[id]);
+                clients[id].name = name;
+                io.in(id).socketsJoin('lobby');
+                io.to(id).emit('sync-client', clients[id]);
+            });
+        } else if (id === 'admin') {
             socket.join('joined');
             socket.on('emergency-meeting', () => game?.triggerMeeting());
             socket.on('start-meeting', () => game?.startMeeting());
@@ -76,16 +80,8 @@ io.on('connection', async (socket) => {
                     socket.join('lobby')
                     io.to(id).emit('sync-client', clients[id]);
                 }
-            } else {
-                clients[id] = {name: false, joined: false};
-                socket.emit('sync-client', clients[id]);
-                socket.on('set-name', (name) => {
-                    clients[id].name = name;
-                    io.in(id).socketsJoin('lobby');
-                    io.to(id).emit('sync-client', clients[id]);
-                });
             }
-
+            
             socket.on('vote', (voteId) => game?.vote(id, voteId))
             socket.on('die', () => game?.killPlayer(id))
             socket.on('start-sabotage', (sabotageId) => game?.startSabotage(sabotageId))
