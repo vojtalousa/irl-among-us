@@ -28,6 +28,7 @@ io.on('connection', async (socket) => {
             socket.on('set-name', (name) => {
                 const id = name
                 clients[id] = {name: false, joined: false};
+                await socket.timeout(5000).emitWithAck('id', name);
                 socket.emit('sync-client', clients[id]);
                 clients[id].name = name;
                 io.in(id).socketsJoin('lobby');
