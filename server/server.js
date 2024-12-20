@@ -31,6 +31,7 @@ io.on('connection', async (socket) => {
                 await socket.timeout(5000).emitWithAck('id', name);
                 socket.emit('sync-client', clients[id]);
                 clients[id].name = name;
+                socket.join(id)
                 io.in(id).socketsJoin('lobby');
                 io.to(id).emit('sync-client', clients[id]);
             });
