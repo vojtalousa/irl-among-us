@@ -105,7 +105,7 @@ export default class Game {
     }
 
     vote(playerId, voteId) {
-        const previousVote = this.players[playerId].vote;
+        const previousVote = this.players[playerId].voteId;
         this.players[playerId].voteId = voteId;
         if (previousVote) {
             const previousVoteIndex = this.state.votes[previousVote].indexOf(playerId);
@@ -115,7 +115,7 @@ export default class Game {
             if (!this.state.votes[voteId]) this.state.votes[voteId] = [];
             this.state.votes[voteId].push(playerId);
 
-            const voted = ({id}) => this.players[id].vote || this.players[id].dead;
+            const voted = ({id}) => this.players[id].voteId || this.players[id].dead;
             if (this.state.players.every(voted)) {
                 clearTimeout(this.meetingTimeout);
                 this.endMeeting()
