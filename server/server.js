@@ -25,6 +25,7 @@ io.on('connection', async (socket) => {
 
         socket.emit('sync-game', game?.state || {section: 'lobby'});
         if (!id) {
+            socket.emit('sync-client', {name: false, joined: false});
             socket.on('set-name', async (name) => {
                 const id = name
                 clients[id] = {name: false, joined: false};
