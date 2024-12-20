@@ -25,7 +25,7 @@ io.on('connection', async (socket) => {
 
         socket.emit('sync-game', game?.state || {section: 'lobby'});
         if (!id) {
-            socket.on('set-name', (name) => {
+            socket.on('set-name', async (name) => {
                 const id = name
                 clients[id] = {name: false, joined: false};
                 await socket.timeout(5000).emitWithAck('id', name);
