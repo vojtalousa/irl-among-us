@@ -106,7 +106,7 @@ export default class Game {
 
     vote(playerId, voteId) {
         const previousVote = this.players[playerId].vote;
-        this.players[playerId].vote = voteId;
+        this.players[playerId].voteId = voteId;
         if (previousVote) {
             const previousVoteIndex = this.state.votes[previousVote].indexOf(playerId);
             this.state.votes[previousVote]?.splice(previousVoteIndex, 1);
