@@ -91,7 +91,7 @@ export default class Game {
         this.state.section = 'meeting-wait';
         this.state.votes = {};
         this.state.players.forEach(({id}) => {
-            this.players[id].vote = null
+            this.players[id].voteId = null
             this.syncPlayer(id);
         });
         this.io.to('joined').emit('sync-game', this.state);
