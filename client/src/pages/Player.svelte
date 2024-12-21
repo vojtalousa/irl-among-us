@@ -22,9 +22,22 @@
 
     const meetingSound = new Audio(meetingMp3);
     const sabotageSound = new Audio(sabotageMp3);
+    const sounds = [meetingSound, sabotageSound];
     sabotageSound.loop = true;
 
+    let setupAudio = false
     onMount(() => {
+        // hack to force audio to play on safari
+        window.onclick = async () => {
+            if (setupAudio) return
+            setupAudio = true
+
+            for (const sound of sounds) {
+                sound.play()
+                sound.pause()
+            }
+        }
+
         socket = getSocket()
         socket.on('sync-game', (newState) => {
             if (newState.sabotage && !gameState.sabotage) {
@@ -62,26 +75,28 @@
     });
 </script>
 
-<Disconnected {socket} />
+<Disconnected {socket}/>
 <Background/>
 <main>
     {#if gameState.section === 'end'}
         <End winners={gameState.winners}/>
     {:else}
         {#if clientState.dead === true}
-            <p class="dead">DUCH <img src={dead} alt="dead" /></p>
+            <p class="dead">DUCH <img src={dead} alt="dead"/></p>
         {/if}
 
-        {#if clientState.name === false}
-            <Login {socket}/>
+        {#if clientState.id === false}
+            <Login {socket} type="id"/>
+        {:else if clientState.name === false}
+            <Login {socket} type="name"/>
         {:else if (gameState.section === 'lobby' && !meetingResults.display) || clientState.joined === false}
-            <Lobby/>
+            <Lobby name={clientState.name}/>
         {:else if gameState.section === 'meeting-wait'}
             <MeetingWait/>
         {:else if gameState.section === 'meeting' || meetingResults.display}
             <Meeting {...gameState} {...clientState} {meetingResults} {socket}/>
         {:else if gameState.section === 'game'}
-            <Game {...gameState} {...clientState} {wrongPasswordDisplayed} {socket}/>
+            <Game {...gameState} {...clientState} {wrongPasswordDisplayed} {socket} {sounds}/>
         {:else}
             <Panel><p>Načítání...</p></Panel>
         {/if}
@@ -90,16 +105,13 @@
 
 <style>
     .dead {
-        position: fixed;
-        top: 15px;
-        width: 100vw;
-        left: 0;
         text-align: center;
         color: white;
         display: flex;
         justify-content: center;
         align-items: center;
         gap: 15px;
+        margin-bottom: 10px;
     }
 
     .dead img {

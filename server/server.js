@@ -1,7 +1,6 @@
 import express from 'express';
 import * as http from "node:http";
 import {Server as SocketIO} from "socket.io";
-import {v4 as uuid} from 'uuid';
 import Game from './game.js';
 
 const app = express();
@@ -19,23 +18,50 @@ let game
 let clients = {}
 io.on('connection', async (socket) => {
     try {
-        console.log('connection from', socket.handshake.auth.id);
-        let id = socket.handshake.auth.id;
+        const id = socket.handshake.auth.id;
         socket.data.id = id;
+        console.log(`connection from ${id}`);
+
+        const setPlayerId = (id) => {
+            if (['admin', 'reactor', 'oxygen'].includes(id)) return
+            socket.data.id = id;
+            socket.join(id);
+            socket.emit('store-id', id);
+            if (clients[id]?.joined) {
+                socket.join('joined')
+                socket.join('players')
+                game?.syncPlayer(id)
+                console.log(`player ${id} joined`)
+            } else if (clients[id]?.name) {
+                socket.join('lobby')
+                socket.emit('sync-client', clients[id]);
+                console.log(`player ${id} waiting`)
+            } else {
+                clients[id] = { id, name: false, joined: false };
+                socket.emit('sync-client', clients[id]);
+                console.log(`player ${id} setting name`)
+                socket.once('set-name', (name) => {
+                    clients[id].name = name;
+                    io.in(id).socketsJoin('lobby');
+                    io.to(id).emit('sync-client', clients[id]);
+                    console.log(`player ${id} set name`)
+                })
+            }
+
+            socket.on('vote', (voteId) => game?.vote(id, voteId))
+            socket.on('die', () => game?.killPlayer(id))
+            socket.on('start-sabotage', (sabotageId) => game?.startSabotage(sabotageId))
+            socket.on('complete-task', (task) => game?.completeTask(id, task.id, task.password))
+            socket.on('report-body', () => {
+                game?.endSabotage()
+                game?.triggerMeeting()
+            })
+        }
 
         socket.emit('sync-game', game?.state || {section: 'lobby'});
         if (!id) {
-            socket.emit('sync-client', {name: false, joined: false});
-            socket.on('set-name', async (name) => {
-                const id = name
-                clients[id] = {name: false, joined: false};
-                await socket.timeout(5000).emitWithAck('id', name);
-                socket.emit('sync-client', clients[id]);
-                clients[id].name = name;
-                socket.join(id)
-                io.in(id).socketsJoin('lobby');
-                io.to(id).emit('sync-client', clients[id]);
-            });
+            socket.emit('sync-client', { id: false, name: false, joined: false });
+            socket.once('set-id', setPlayerId)
         } else if (id === 'admin') {
             socket.join('joined');
             socket.on('emergency-meeting', () => game?.triggerMeeting());
@@ -72,34 +98,17 @@ io.on('connection', async (socket) => {
             socket.join('joined')
             socket.on('oxygen-push', () => game?.oxygenButton())
         } else {
-            socket.join(id);
-            console.log('client connection', id, clients[id]);
-            if (clients[id]?.name) {
-                if (clients[id].joined) {
-                    socket.join('joined')
-                    socket.join('players')
-                    game?.syncPlayer(id)
-                } else {
-                    socket.join('lobby')
-                    io.to(id).emit('sync-client', clients[id]);
-                }
-            }
-            
-            socket.on('vote', (voteId) => game?.vote(id, voteId))
-            socket.on('die', () => game?.killPlayer(id))
-            socket.on('start-sabotage', (sabotageId) => game?.startSabotage(sabotageId))
-            socket.on('complete-task', (task) => game?.completeTask(id, task.id, task.password))
-            socket.on('report-body', () => {
-                game?.endSabotage()
-                game?.triggerMeeting()
-            })
+            setPlayerId(id);
         }
+
+        socket.on('disconnect', () => console.log(`${id} was disconnected`))
     } catch (e) {
-        console.error('Error', e);
+        console.error(`error in socket ${socket.data.id}`, e);
         socket.disconnect();
     }
 });
 
-server.listen(process.env.PORT || 3000, () => {
-    console.log('Server running on port 3000');
+const port = process.env.PORT || 3000
+server.listen(port, () => {
+    console.log(`server running on port ${port}`);
 })

@@ -22,31 +22,31 @@
 
 <Background/>
 <main>
-    {#if !gameState.section || gameState.section === 'lobby'}
-        <Lobby/>
-    {:else if gameState.section === 'end'}
-        <End winners={gameState.winners}/>
-    {:else}
-        {#if gameState.sabotage?.id !== 'comms'}
-            <div class="player-list-container">
-                <Panel>
-                    <Display>
-                        <div class="display-list">
-                            <p>Status Hráčů:</p>
-                            {#each gameState.players as player}
-                                <p class="player-status">{player.name} <span
-                                        class:dead={player.dead}>{player.dead ? 'DEAD' : 'OK'}</span></p>
-                            {/each}
-                        </div>
-                    </Display>
-                </Panel>
-            </div>
+    {#if gameState.section && gameState.section !== 'lobby'}
+        {#if gameState.section === 'end'}
+            <End winners={gameState.winners}/>
         {:else}
-            <Panel>
-                <p class="flash-text">
-                    Sabotáž: {gameState.sabotage.id} (<Countdown endTime={gameState.sabotage.end}/>s)
-                </p>
-            </Panel>
+            {#if gameState.sabotage?.id !== 'comms'}
+                <div class="player-list-container">
+                    <Panel>
+                        <Display>
+                            <div class="display-list">
+                                <p>Status Hráčů:</p>
+                                {#each gameState.players as player}
+                                    <p class="player-status">{player.name} <span
+                                            class:dead={player.dead}>{player.dead ? 'DEAD' : 'OK'}</span></p>
+                                {/each}
+                            </div>
+                        </Display>
+                    </Panel>
+                </div>
+            {:else}
+                <Panel>
+                    <p class="flash-text">
+                        Sabotáž: {gameState.sabotage.id} (<Countdown endTime={gameState.sabotage.end}/>s)
+                    </p>
+                </Panel>
+            {/if}
         {/if}
     {/if}
 </main>

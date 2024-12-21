@@ -26,17 +26,17 @@ export default class Game {
 
     start(players) {
         this.state.section = 'game';
-        console.log('Starting game');
+        console.log('starting new game');
 
         const {chosen: impostors, others: crewmates} = randSelection(players, this.options.impostorCount);
-        console.log('Impostors', impostors);
-        console.log('Crewmates', crewmates);
+        console.log('impostors:', impostors.map(x => x.id));
+        console.log('crewmates:', crewmates.map(x => x.id));
 
         crewmates.forEach(({id, name}) => {
-            this.players[id] = {name, role: 'crewmate'}
+            this.players[id] = {id, name, role: 'crewmate'}
         });
         impostors.forEach(({id, name}) => {
-            this.players[id] = {name, role: 'impostor', impostors};
+            this.players[id] = {id, name, role: 'impostor', impostors};
         });
         players.forEach(({id}) => {
             const remainingTasks = tasks.map(({description}, index) => {
@@ -54,6 +54,7 @@ export default class Game {
         });
         this.state.players = players.map(({id, name}) => ({id, name}));
         this.state.tasks.total = this.options.taskCount * crewmates.length;
+        console.log(`generated ${this.state.tasks.total} tasks`)
 
         this.io.to('joined').emit('sync-game', this.state);
     }
@@ -64,11 +65,13 @@ export default class Game {
         this.state.section = 'end';
         this.state.winners = winners;
         this.io.to('joined').emit('sync-game', this.state);
+        console.log(`game ended, ${winners} won`);
     }
 
     killPlayer(id) {
         this.players[id].dead = true;
         this.state.players.find((player) => player.id === id).dead = true;
+        console.log(`player ${id} killed`)
 
         const impostors = [];
         const crewmates = [];
@@ -77,8 +80,6 @@ export default class Game {
             if (role === 'impostor') impostors.push(id);
             else crewmates.push(id);
         }
-        console.log('Impostors', impostors);
-        console.log('Crewmates', crewmates);
         if (impostors.length === 0) this.endGame('crewmates');
         else if (impostors.length >= crewmates.length) this.endGame('impostors');
         else {
@@ -95,6 +96,7 @@ export default class Game {
             this.syncPlayer(id);
         });
         this.io.to('joined').emit('sync-game', this.state);
+        console.log('meeting triggered')
     }
 
     startMeeting() {
@@ -102,6 +104,7 @@ export default class Game {
         this.state.meetingEnd = Date.now() + this.options.meetingLength * 1000;
         this.meetingTimeout = setTimeout(() => this.endMeeting(), this.options.meetingLength * 1000);
         this.io.to('joined').emit('sync-game', this.state);
+        console.log('meeting started')
     }
 
     vote(playerId, voteId) {
@@ -123,16 +126,16 @@ export default class Game {
         }
 
         this.syncPlayer(playerId);
+        console.log(`player ${playerId} voted ${voteId}`);
     }
 
     endMeeting() {
-        console.log(this, this.state, this.players)
         const votes = Object.entries(this.state.votes);
         const maxVotes = Math.max(...votes.map(([_, votes]) => votes.length));
         const mostVoted = votes.filter(([_, votes]) => votes.length === maxVotes);
 
         let ejectedId = mostVoted.length === 1 ? mostVoted[0][0] : null;
-        console.log('Ejected', ejectedId);
+        console.log(`${ejectedId} was chosen to be ejected`);
         if (ejectedId && ejectedId !== 'skip') this.killPlayer(ejectedId);
 
         if (this.state.section !== 'end') this.state.section = 'game';
@@ -154,6 +157,7 @@ export default class Game {
                 this.syncPlayer(playerId);
                 this.io.to('joined').emit('sync-game', this.state);
             }
+            console.log(`player ${playerId} completed task ${taskId}`);
         }
     }
 
@@ -164,7 +168,7 @@ export default class Game {
         this.state.sabotage = {id: sabotageId, end: Date.now() + sabotageLength};
         this.state.sabotageCooldownEnd = Date.now() + this.options.sabotageCooldown * 1000;
         this.sabotagePushed = 0;
-        console.log('Sabotage', this.state.sabotage);
+        console.log(`sabotage ${sabotageId} started`);
         this.sabotageTimeout = setTimeout(() => {
             this.endSabotage();
             if (sabotageId === 'oxygen' || sabotageId === 'reactor') this.endGame('impostors');
@@ -176,6 +180,7 @@ export default class Game {
         this.state.sabotage = false;
         if (this.sabotageTimeout) clearTimeout(this.sabotageTimeout);
         this.io.to('joined').emit('sync-game', this.state);
+        console.log('sabotage ended');
     }
 
     reactorButtonDown() {

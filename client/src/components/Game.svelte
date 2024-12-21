@@ -166,7 +166,7 @@
     .button-panel {
         display: flex;
         gap: 16px;
-        justify-content: center;
+        justify-content: space-evenly;
     }
 
     .button-panel button, .close-menu {

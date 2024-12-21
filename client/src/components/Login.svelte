@@ -3,16 +3,17 @@
     import Panel from "./Panel.svelte";
     import Display from "./Display.svelte";
 
-    let {socket} = $props();
-    let name = $state('');
+    let {socket, type} = $props();
+    let value = $state('');
+    let placeholder = $derived(type === 'name' ? 'Jméno' : 'Heslo');
 </script>
 
 <Panel --padding-bottom="15px">
     <div>
         <Display --padding-top="5px" --padding-bottom="5px">
-            <input type="text" id="name" bind:value={name} placeholder="Jméno"/>
+            <input type="text" bind:value={value} {placeholder} />
         </Display>
-        <button onclick={() => socket.emit('set-name', name)}>
+        <button onclick={() => socket.emit(`set-${type}`, value)}>
             <img src={start} alt="Start"/>
         </button>
     </div>
