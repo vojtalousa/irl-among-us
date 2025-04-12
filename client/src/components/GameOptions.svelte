@@ -1,6 +1,7 @@
 <script>
     import Panel from "./Panel.svelte";
     import Display from "./Display.svelte";
+    import roleRevealMp3 from "../assets/sounds/role-reveal.mp3";
 
     let { socket } = $props();
 
@@ -12,6 +13,8 @@
     let commsSabotageLength = $state(60)
     let sabotageCooldown = $state(2 * 60)
 
+    const roleRevealSound = new Audio(roleRevealMp3);
+
     const startGame = () => {
         if (!impostorCount || !meetingLength || !taskCount || !oxygenSabotageLength ||
             !reactorSabotageLength || !commsSabotageLength || !sabotageCooldown) {
@@ -20,6 +23,8 @@
             reactorSabotageLength < 1 || commsSabotageLength < 1 || sabotageCooldown < 1) {
             alert('Hodnoty musí být větší než 0')
         } else {
+            roleRevealSound.currentTime = 0;
+            roleRevealSound.play();
             socket.emit('start-game', {
                 impostorCount,
                 meetingLength,
@@ -92,6 +97,7 @@
         display: flex;
         flex-direction: column;
         gap: 10px;
+        min-width: 380px;
     }
 
     .options {

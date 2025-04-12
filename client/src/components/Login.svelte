@@ -6,14 +6,24 @@
     let {socket, type} = $props();
     let value = $state('');
     let placeholder = $derived(type === 'name' ? 'Jméno' : 'Heslo');
+
+    const submit = () => {
+        if (value.length > 0) {
+            const forbidden = ['admin', 'reactor', 'oxygen', 'medical']
+            if (forbidden.includes(value)) alert('NE!');
+            else socket.emit(`set-${type}`, value);
+        } else {
+            alert('Vyplňte hodnotu');
+        }
+    }
 </script>
 
 <Panel --padding-bottom="15px">
     <div>
         <Display --padding-top="5px" --padding-bottom="5px">
-            <input type="text" bind:value={value} {placeholder} />
+            <input type="text" bind:value={value} {placeholder} maxlength="12"/>
         </Display>
-        <button onclick={() => socket.emit(`set-${type}`, value)}>
+        <button onclick={submit}>
             <img src={start} alt="Start"/>
         </button>
     </div>

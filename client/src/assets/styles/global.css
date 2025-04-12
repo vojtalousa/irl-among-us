@@ -49,3 +49,13 @@ p {
 .flash-text {
     animation: flash 1s infinite;
 }
+
+*::-webkit-scrollbar {
+    width: 5px;
+    background-color: white;
+    border-radius: 10px;
+}
+*::-webkit-scrollbar-thumb {
+    background-color: #7C979D;
+    border-radius: 10px;
+}

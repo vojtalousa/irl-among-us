@@ -6,9 +6,12 @@
     import Background from "../components/Background.svelte";
     import Panel from "../components/Panel.svelte";
     import GameOptions from "../components/GameOptions.svelte";
+    import Disconnected from "../components/Disconnected.svelte";
+    import List from "../components/List.svelte";
 
     let socket = $state(null)
     let gameState = $state({})
+    let lobbyPlayers = $state([])
     $inspect(gameState)
 
     onMount(() => {
@@ -16,15 +19,26 @@
         socket.on('sync-game', (newState) => {
             gameState = newState
         });
+        socket.on('player-list', (players) => {
+            lobbyPlayers = players
+        })
     })
 </script>
 
+<Disconnected {socket}/>
 <Background/>
 <main>
     {#if gameState.section === 'end'}
-        <End winners={gameState.winners}/>
+        <End winners={gameState.winners} players={gameState.players}/>
     {:else if gameState.section === 'lobby'}
-        <GameOptions socket={socket}/>
+        <div class="lobby-grid">
+            <GameOptions socket={socket}/>
+            <List label={`Hráči (${lobbyPlayers.length})`}>
+                {#each lobbyPlayers as player}
+                    <p>{player.name}</p>
+                {/each}
+            </List>
+        </div>
     {:else}
         {#if gameState.sabotage?.id !== 'comms'}
             <Panel --padding-bottom="25px" --padding-top="18px"
@@ -61,6 +75,16 @@
         display: flex;
         flex-direction: column;
         gap: 10px;
+    }
+
+    .lobby-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .lobby-grid :global(div:not(.list)) {
+        height: 100%;
     }
 
     .task-progress {

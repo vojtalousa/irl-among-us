@@ -11,8 +11,11 @@
     import Panel from "../components/Panel.svelte";
     import dead from "../assets/images/dead.svg";
     import Disconnected from "../components/Disconnected.svelte";
+    import Debug from "../components/Debug.svelte";
     import meetingMp3 from "../assets/sounds/meeting.mp3";
     import sabotageMp3 from "../assets/sounds/sabotage.mp3";
+    import crewmateWinMp3 from "../assets/sounds/win-crewmate.mp3";
+    import impostorWinMp3 from "../assets/sounds/win-impostor.mp3";
 
     let socket = $state(null)
     let gameState = $state({})
@@ -22,7 +25,9 @@
 
     const meetingSound = new Audio(meetingMp3);
     const sabotageSound = new Audio(sabotageMp3);
-    const sounds = [meetingSound, sabotageSound];
+    const crewmateWinSound = new Audio(crewmateWinMp3);
+    const impostorWinSound = new Audio(impostorWinMp3);
+    const sounds = [meetingSound, sabotageSound, crewmateWinSound, impostorWinSound];
     sabotageSound.loop = true;
 
     let setupAudio = false
@@ -52,6 +57,16 @@
                 meetingSound.play();
             }
 
+            if (newState.section === 'end' && gameState.section !== 'end') {
+                if (newState.winners === 'impostors') {
+                    impostorWinSound.currentTime = 0;
+                    impostorWinSound.play();
+                } else {
+                    crewmateWinSound.currentTime = 0;
+                    crewmateWinSound.play();
+                }
+            }
+
             gameState = newState
         });
         socket.on('sync-client', (newState) => {
@@ -75,11 +90,14 @@
     });
 </script>
 
+{#if clientState.debug}
+    <Debug gameState={gameState}/>
+{/if}
 <Disconnected {socket}/>
 <Background/>
 <main>
     {#if gameState.section === 'end'}
-        <End winners={gameState.winners}/>
+        <End winners={gameState.winners} players={gameState.players}/>
     {:else}
         {#if clientState.dead === true}
             <p class="dead">DUCH <img src={dead} alt="dead"/></p>
@@ -96,7 +114,7 @@
         {:else if gameState.section === 'meeting' || meetingResults.display}
             <Meeting {...gameState} {...clientState} {meetingResults} {socket}/>
         {:else if gameState.section === 'game'}
-            <Game {...gameState} {...clientState} {wrongPasswordDisplayed} {socket} {sounds}/>
+            <Game {...gameState} {...clientState} {wrongPasswordDisplayed} {socket}/>
         {:else}
             <Panel><p>Načítání...</p></Panel>
         {/if}
