@@ -2,6 +2,7 @@ import express from 'express';
 import * as http from "node:http";
 import {Server as SocketIO} from "socket.io";
 import Game from './game.js';
+import {logHistory, log} from "./helpers.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -12,7 +13,6 @@ const io = new SocketIO(server, {
         origin: true,
     }
 });
-app.use(express.static('../client/build', { extensions: ['html'] }));
 
 let game
 const clients = {}
@@ -27,21 +27,21 @@ const setPlayerId = async (socket, id) => {
         socket.join('joined')
         socket.join('players')
         game?.syncPlayer(id)
-        console.log(`player ${id} joined`)
+        log(`player ${id} joined`)
     } else if (clients[id]?.name) {
         socket.join('lobby')
         socket.emit('sync-client', clients[id]);
         await syncReadyPlayers()
-        console.log(`player ${id} waiting`)
+        log(`player ${id} waiting`)
     } else {
         clients[id] = { id, name: false, joined: false };
         socket.emit('sync-client', clients[id]);
-        console.log(`player ${id} setting name`)
+        log(`player ${id} setting name`)
         socket.once('set-name', async (name) => {
             clients[id].name = name;
             io.in(id).socketsJoin('lobby');
             io.to(id).emit('sync-client', clients[id]);
-            console.log(`player ${id} set name ${name}`)
+            log(`player ${id} set name ${name}`)
             await syncReadyPlayers()
         })
     }
@@ -67,7 +67,7 @@ const getReadyPlayers = async () => {
 const syncReadyPlayers = async () => {
     const players = await getReadyPlayers();
     io.to('admin').emit('player-list', players);
-    console.log('updated player list', players);
+    log('updated player list', players);
 }
 
 const ensureNeededConnections = async () => {
@@ -124,10 +124,10 @@ io.on('connection', async (socket) => {
     try {
         const id = socket.handshake.auth.id;
         socket.data.id = id;
-        console.log(`connection from ${id}`);
+        log(`connection from ${id}`);
 
         socket.on('disconnect', async () => {
-            console.log(`${id} was disconnected`)
+            log(`${id} was disconnected`)
             await syncReadyPlayers()
             await ensureNeededConnections()
         })
@@ -145,7 +145,7 @@ io.on('connection', async (socket) => {
             socket.join(['joined', 'medical']);
         } else {
             if (!id || !clients[id]) {
-                if (id && !clients[id]) console.log(`unknown id ${id}, resetting`);
+                if (id && !clients[id]) log(`unknown id ${id}, resetting`);
                 socket.emit('sync-client', { id: false, name: false, joined: false });
                 socket.once('set-id', (newId) => setPlayerId(socket, newId));
             } else {
@@ -160,7 +160,7 @@ io.on('connection', async (socket) => {
     }
 });
 
-app.get('/help', async (req, res) => {
+app.get('/', async (req, res) => {
     const clientsStr = Object.values(clients).map(client => {
         return `ID: ${client.id} NAME: ${client.name} ${client.joined ? 'joined' : 'waiting'} ${client.debug ? 'debug' : ''}`
     }).join('<br>');
@@ -171,17 +171,21 @@ app.get('/help', async (req, res) => {
 
     const gameStr = game ? `game ${game.state.section} with ${Object.keys(game.players).length} players` : 'no game';
 
+    const logStr = logHistory.join('<br>');
+
     const result = `<h3>clients:</h3><br>
     ${clientsStr}<br>
     <h3>sockets:</h3><br>
     ${socketsStr}<br>
     <h3>game:</h3><br>
-    ${gameStr}`;
+    ${gameStr}<br>
+    <h3>logs:</h3><br>
+    ${logStr}<br>`;
 
     res.send(result);
 })
 
 const port = process.env.PORT || 3000
 server.listen(port, () => {
-    console.log(`server running on port ${port}`);
+    log(`server running on port ${port}`);
 })

@@ -1,6 +1,6 @@
 import io from 'socket.io-client';
 
-const ENDPOINT = window.location.origin.match(/\.[a-z]+$/) ? window.location.origin : 'http://192.168.0.185:3000';
+const ENDPOINT = import.meta.env.VITE_HOST
 
 const getSocket = (forceId = false) => {
     if (forceId) {

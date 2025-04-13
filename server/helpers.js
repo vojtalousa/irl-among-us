@@ -9,3 +9,14 @@ export const randSelection = (arr, num) => {
     }
     return { chosen, others };
 }
+
+export const logHistory = []
+export const log = (...messages) => {
+    const message = messages.join(' ');
+    const date = new Date();
+    const timestamp = `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
+    const logEntry = `[${timestamp}] ${message}`;
+    logHistory.push(logEntry);
+    if (logHistory.length > 100) logHistory.shift();
+    console.log(logEntry);
+}
