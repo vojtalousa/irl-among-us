@@ -105,16 +105,17 @@ const handleAdminJoin = async (socket) => {
     });
     socket.on('end-game', async () => {
         if (!game) return
+
         game.endGame('forced game end');
-        io.to('joined').emit('sync-game', {section: 'lobby'});
-        if (game?.state?.players) game.state.players.forEach(({id}) => {
-            io.to(id).socketsLeave(['joined', 'players']);
-            io.to(id).socketsJoin('lobby');
-            clients[id].joined = false;
-            io.to(id).emit('sync-client', clients[id]);
+        io.emit('sync-game', {section: 'lobby'});
+        io.in('players').socketsJoin('lobby');
+        io.in('players').socketsLeave(['joined', 'players']);
+
+        if (game?.state?.players) game.state.players.forEach(player => {
+            clients[player.id].joined = false;
+            io.to(player.id).emit('sync-client', clients[player.id]);
         });
         await syncReadyPlayers()
-
         game = null;
     })
 
