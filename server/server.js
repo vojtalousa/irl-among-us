@@ -104,7 +104,8 @@ const handleAdminJoin = async (socket) => {
         await ensureNeededConnections()
     });
     socket.on('end-game', async () => {
-        game?.endGame('forced game end');
+        if (!game) return
+        game.endGame('forced game end');
         io.to('joined').emit('sync-game', {section: 'lobby'});
         if (game?.state?.players) game.state.players.forEach(({id}) => {
             io.to(id).socketsLeave(['joined', 'players']);
@@ -122,18 +123,18 @@ const handleAdminJoin = async (socket) => {
 
 io.on('connection', async (socket) => {
     try {
-        const id = socket.handshake.auth.id;
+        const id = socket.data.id || socket.handshake.auth.id;
         socket.data.id = id;
         log(`connection from ${id}`);
 
         socket.on('disconnect', async () => {
-            log(`${id} was disconnected`)
+            log(`${socket.data.id} was disconnected`)
             await syncReadyPlayers()
             await ensureNeededConnections()
         })
 
         socket.emit('sync-game', game?.state || {section: 'lobby'});
-        if (id === 'admin') handleAdminJoin(socket);
+        if (id === 'admin') await handleAdminJoin(socket);
         else if (id === 'reactor') {
             socket.join(['joined', 'reactor']);
             socket.on('reactor-up', () => game?.reactorButtonUp())
@@ -145,7 +146,11 @@ io.on('connection', async (socket) => {
             socket.join(['joined', 'medical']);
         } else {
             if (!id || !clients[id]) {
-                if (id && !clients[id]) log(`unknown id ${id}, resetting`);
+                if (id && !clients[id]) {
+                    log(`unknown id ${id}, resetting`);
+                    socket.emit('store-id', null);
+                    socket.data.id = null;
+                }
                 socket.emit('sync-client', { id: false, name: false, joined: false });
                 socket.once('set-id', (newId) => setPlayerId(socket, newId));
             } else {
