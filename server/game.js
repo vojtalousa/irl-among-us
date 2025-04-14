@@ -68,6 +68,7 @@ export default class Game {
     endGame(winners) {
         if (this.sabotageTimeout) clearTimeout(this.sabotageTimeout);
         if (this.meetingTimeout) clearTimeout(this.meetingTimeout);
+        this.endSabotage();
         this.state.section = 'end';
         this.state.winners = winners;
         this.state.players = Object.values(this.players);
