@@ -1,6 +1,8 @@
 import tasks from './tasks.js';
 import {randSelection, log} from "./helpers.js";
 
+const playerSeenTasks = {};
+
 export default class Game {
     constructor(io, options) {
         this.state = {
@@ -8,7 +10,7 @@ export default class Game {
             players: [],
             votes: {},
             meetingEnd: null,
-            tasks: {done: 0, total: null},
+            tasks: {done: 0, total: 0},
             sabotage: false,
             sabotageCooldownEnd: 0,
             badConnections: [],
@@ -46,21 +48,35 @@ export default class Game {
             this.players[id] = {id, name, debug, role: 'impostor', impostors};
         });
         players.forEach(({id}) => {
-            const remainingTasks = tasks.map(({description}, index) => {
-                return {id: index, description, completed: false}
+            if (!playerSeenTasks[id]) playerSeenTasks[id] = new Set();
+
+            const remainingTasks = tasks.map(({id, description}) => {
+                return {id, description, completed: false}
             });
+            const unseenTasks = remainingTasks.filter((task) => !playerSeenTasks[id].has(task.id));
             const playerTasks = [];
             for (let i = 0; i < this.options.taskCount; i++) {
-                const index = Math.floor(Math.random() * remainingTasks.length);
-                const task = remainingTasks.splice(index, 1)[0];
-                if (!task) break
+                let task
+                if (unseenTasks.length > 0) {
+                    const index = Math.floor(Math.random() * unseenTasks.length);
+                    task = unseenTasks.splice(index, 1)[0];
+                    const remainingTaskIndex = remainingTasks.findIndex(({id}) => id === task.id);
+                    remainingTasks.splice(remainingTaskIndex, 1);
+                } else {
+                    const index = Math.floor(Math.random() * remainingTasks.length);
+                    task = remainingTasks.splice(index, 1)[0];
+                    if (!task) break
+                }
+
                 playerTasks.push(task);
+                playerSeenTasks[id].add(task.id);
             }
+            if (playerSeenTasks[id].size >= tasks.length) playerSeenTasks[id].clear()
             this.players[id].tasks = playerTasks;
+            this.state.tasks.total += playerTasks.length;
             this.syncPlayer(id);
         });
         this.state.players = players.map(({id, name}) => ({id, name}));
-        this.state.tasks.total = this.options.taskCount * crewmates.length;
         this.syncGame();
         log(`generated ${this.state.tasks.total} tasks`)
     }
@@ -169,7 +185,7 @@ export default class Game {
         if (this.state.section !== 'game') return;
         if (!this.players[playerId]) return;
 
-        const task = tasks[taskId];
+        const task = tasks.find((task) => task?.id === taskId);
         const playerTask = this.players[playerId].tasks.find((task) => task?.id === taskId);
         if (!task || !playerTask || playerTask.completed) return;
 
