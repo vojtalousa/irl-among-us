@@ -20,6 +20,10 @@ export default class Game {
         this.options = options;
     }
 
+    syncGame() {
+        this.io.to('game').emit('sync-game', this.state);
+    }
+
     syncPlayer(id) {
         this.io.to(id).emit('sync-client', this.players[id]);
     }
@@ -56,7 +60,7 @@ export default class Game {
         this.state.tasks.total = this.options.taskCount * crewmates.length;
         console.log(`generated ${this.state.tasks.total} tasks`)
 
-        this.io.to('joined').emit('sync-game', this.state);
+        this.syncGame()
     }
 
     endGame(winners) {
@@ -64,7 +68,7 @@ export default class Game {
         if (this.meetingTimeout) clearTimeout(this.meetingTimeout);
         this.state.section = 'end';
         this.state.winners = winners;
-        this.io.to('joined').emit('sync-game', this.state);
+        this.syncGame()
         console.log(`game ended, ${winners} won`);
     }
 
@@ -84,7 +88,7 @@ export default class Game {
         else if (impostors.length >= crewmates.length) this.endGame('impostors');
         else {
             this.syncPlayer(id);
-            this.io.to('joined').emit('sync-game', this.state);
+            this.syncGame()
         }
     }
 
@@ -95,7 +99,7 @@ export default class Game {
             this.players[id].voteId = null
             this.syncPlayer(id);
         });
-        this.io.to('joined').emit('sync-game', this.state);
+        this.syncGame()
         console.log('meeting triggered')
     }
 
@@ -103,7 +107,7 @@ export default class Game {
         this.state.section = 'meeting';
         this.state.meetingEnd = Date.now() + this.options.meetingLength * 1000;
         this.meetingTimeout = setTimeout(() => this.endMeeting(), this.options.meetingLength * 1000);
-        this.io.to('joined').emit('sync-game', this.state);
+        this.syncGame()
         console.log('meeting started')
     }
 
@@ -139,8 +143,8 @@ export default class Game {
         if (ejectedId && ejectedId !== 'skip') this.killPlayer(ejectedId);
 
         if (this.state.section !== 'end') this.state.section = 'game';
-        this.io.to('players').emit('meeting-end', this.players[ejectedId]?.name);
-        this.io.to('joined').emit('sync-game', this.state);
+        this.io.to('game').emit('meeting-end', this.players[ejectedId]?.name);
+        this.syncGame()
     }
 
     completeTask(playerId, taskId, password) {
@@ -155,7 +159,7 @@ export default class Game {
             if (this.state.tasks.done >= this.state.tasks.total) this.endGame('crewmates');
             else {
                 this.syncPlayer(playerId);
-                this.io.to('joined').emit('sync-game', this.state);
+                this.syncGame()
             }
             console.log(`player ${playerId} completed task ${taskId}`);
         }
@@ -173,13 +177,13 @@ export default class Game {
             this.endSabotage();
             if (sabotageId === 'oxygen' || sabotageId === 'reactor') this.endGame('impostors');
         }, sabotageLength);
-        this.io.to('joined').emit('sync-game', this.state);
+        this.syncGame()
     }
 
     endSabotage() {
         this.state.sabotage = false;
         if (this.sabotageTimeout) clearTimeout(this.sabotageTimeout);
-        this.io.to('joined').emit('sync-game', this.state);
+        this.syncGame()
         console.log('sabotage ended');
     }
 

@@ -13,6 +13,7 @@
     import Disconnected from "../components/Disconnected.svelte";
     import meetingMp3 from "../assets/sounds/meeting.mp3";
     import sabotageMp3 from "../assets/sounds/sabotage.mp3";
+    import ChooseLobby from "../components/ChooseLobby.svelte";
 
     let socket = $state(null)
     let gameState = $state({})
@@ -37,8 +38,11 @@
                 sound.pause()
             }
         }
+    });
 
-        socket = getSocket()
+    const chooseLobby = (lobbyId) => {
+        socket = getSocket(lobbyId)
+        console.log(socket)
         socket.on('sync-game', (newState) => {
             if (newState.sabotage && !gameState.sabotage) {
                 sabotageSound.currentTime = 0;
@@ -72,36 +76,40 @@
                 wrongPasswordDisplayed = false;
             }, 3000);
         });
-    });
+    }
 </script>
 
 <Disconnected {socket}/>
 <Background/>
-<main>
-    {#if gameState.section === 'end'}
-        <End winners={gameState.winners}/>
-    {:else}
-        {#if clientState.dead === true}
-            <p class="dead">DUCH <img src={dead} alt="dead"/></p>
-        {/if}
-
-        {#if clientState.id === false}
-            <Login {socket} type="id"/>
-        {:else if clientState.name === false}
-            <Login {socket} type="name"/>
-        {:else if (gameState.section === 'lobby' && !meetingResults.display) || clientState.joined === false}
-            <Lobby name={clientState.name}/>
-        {:else if gameState.section === 'meeting-wait'}
-            <MeetingWait/>
-        {:else if gameState.section === 'meeting' || meetingResults.display}
-            <Meeting {...gameState} {...clientState} {meetingResults} {socket}/>
-        {:else if gameState.section === 'game'}
-            <Game {...gameState} {...clientState} {wrongPasswordDisplayed} {socket} {sounds}/>
+{#if !socket}
+    <ChooseLobby onchoose={chooseLobby} />
+{:else}
+    <main>
+        {#if gameState.section === 'end'}
+            <End winners={gameState.winners}/>
         {:else}
-            <Panel><p>Načítání...</p></Panel>
+            {#if clientState.dead === true}
+                <p class="dead">DUCH <img src={dead} alt="dead"/></p>
+            {/if}
+
+            {#if clientState.id === false}
+                <Login {socket} type="id"/>
+            {:else if clientState.name === false}
+                <Login {socket} type="name"/>
+            {:else if (gameState.section === 'lobby' && !meetingResults.display) || clientState.joined === false}
+                <Lobby name={clientState.name}/>
+            {:else if gameState.section === 'meeting-wait'}
+                <MeetingWait/>
+            {:else if gameState.section === 'meeting' || meetingResults.display}
+                <Meeting {...gameState} {...clientState} {meetingResults} {socket}/>
+            {:else if gameState.section === 'game'}
+                <Game {...gameState} {...clientState} {wrongPasswordDisplayed} {socket} />
+            {:else}
+                <Panel><p>Načítání...</p></Panel>
+            {/if}
         {/if}
-    {/if}
-</main>
+    </main>
+{/if}
 
 <style>
     .dead {

@@ -6,50 +6,56 @@
     import Display from "../components/Display.svelte";
     import End from "../components/End.svelte";
     import Countdown from "../components/Countdown.svelte";
-    import Lobby from "../components/Lobby.svelte";
+    import ChooseLobby from "../components/ChooseLobby.svelte";
 
     let socket = $state(null)
     let gameState = $state({})
     $inspect(gameState)
 
-    onMount(() => {
-        socket = getSocket('admin')
+    const chooseLobby = (lobbyId) => {
+        socket = getSocket(lobbyId, 'admin')
         socket.on('sync-game', (newState) => {
             gameState = newState
         });
-    })
+    }
 </script>
 
 <Background/>
-<main>
-    {#if gameState.section && gameState.section !== 'lobby'}
-        {#if gameState.section === 'end'}
-            <End winners={gameState.winners}/>
-        {:else}
-            {#if gameState.sabotage?.id !== 'comms'}
-                <div class="player-list-container">
-                    <Panel>
-                        <Display>
-                            <div class="display-list">
-                                <p>Status Hráčů:</p>
-                                {#each gameState.players as player}
-                                    <p class="player-status">{player.name} <span
-                                            class:dead={player.dead}>{player.dead ? 'DEAD' : 'OK'}</span></p>
-                                {/each}
-                            </div>
-                        </Display>
-                    </Panel>
-                </div>
+{#if !socket}
+    <ChooseLobby onchoose={chooseLobby}/>
+{:else}
+    <main>
+        {#if gameState.section && gameState.section !== 'lobby'}
+            {#if gameState.section === 'end'}
+                <End winners={gameState.winners}/>
             {:else}
-                <Panel>
-                    <p class="flash-text">
-                        Sabotáž: {gameState.sabotage.id} (<Countdown endTime={gameState.sabotage.end}/>s)
-                    </p>
-                </Panel>
+                {#if gameState.sabotage?.id !== 'comms'}
+                    <div class="player-list-container">
+                        <Panel>
+                            <Display>
+                                <div class="display-list">
+                                    <p>Status Hráčů:</p>
+                                    {#each gameState.players as player}
+                                        <p class="player-status">{player.name} <span
+                                                class:dead={player.dead}>{player.dead ? 'DEAD' : 'OK'}</span></p>
+                                    {/each}
+                                </div>
+                            </Display>
+                        </Panel>
+                    </div>
+                {:else}
+                    <Panel>
+                        <p class="flash-text">
+                            Sabotáž: {gameState.sabotage.id} (
+                            <Countdown endTime={gameState.sabotage.end}/>
+                            s)
+                        </p>
+                    </Panel>
+                {/if}
             {/if}
         {/if}
-    {/if}
-</main>
+    </main>
+{/if}
 
 <style>
     .player-list-container {

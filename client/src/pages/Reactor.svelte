@@ -4,6 +4,7 @@
     import Countdown from "../components/Countdown.svelte";
     import Background from "../components/Background.svelte";
     import Panel from "../components/Panel.svelte";
+    import ChooseLobby from "../components/ChooseLobby.svelte";
 
     let socket = $state(null)
     let gameState = $state({})
@@ -22,27 +23,34 @@
         socket.emit('reactor-down')
     }
 
-    onMount(() => {
-        socket = getSocket('reactor')
+    const chooseLobby = (lobbyId) => {
+        socket = getSocket(lobbyId, 'reactor')
         socket.on('sync-game', (newState) => {
             if (newState.sabotage?.id !== 'reactor') pushed = false
             gameState = newState
         });
-    })
+    }
 </script>
 
-<Background />
-<main>
-    {#if gameState.sabotage?.id === 'reactor'}
-        <Panel>
-            <p class="title flash-text">REACTOR MELTDOWN</p>
-            <p><Countdown endTime={gameState.sabotage.end}/>s</p>
-        </Panel>
-        <Panel>
-            <button onmousedown={down} ontouchstart={down} class:pushed={pushed}>Fix</button>
-        </Panel>
-    {/if}
-</main>
+<Background/>
+{#if !socket}
+    <ChooseLobby onchoose={chooseLobby}/>
+{:else}
+    <main>
+        {#if gameState.sabotage?.id === 'reactor'}
+            <Panel>
+                <p class="title flash-text">REACTOR MELTDOWN</p>
+                <p>
+                    <Countdown endTime={gameState.sabotage.end}/>
+                    s
+                </p>
+            </Panel>
+            <Panel>
+                <button onmousedown={down} ontouchstart={down} class:pushed={pushed}>Fix</button>
+            </Panel>
+        {/if}
+    </main>
+{/if}
 <svelte:window onmouseup={up} ontouchend={up}/>
 
 <style>

@@ -4,6 +4,7 @@
     import Countdown from "../components/Countdown.svelte";
     import Panel from "../components/Panel.svelte";
     import Background from "../components/Background.svelte";
+    import ChooseLobby from "../components/ChooseLobby.svelte";
 
     let socket = $state(null)
     let gameState = $state({})
@@ -17,27 +18,34 @@
         socket.emit('oxygen-push')
     }
 
-    onMount(() => {
-        socket = getSocket('oxygen')
+    const chooseLobby = (lobbyId) => {
+        socket = getSocket(lobbyId, 'oxygen')
         socket.on('sync-game', (newState) => {
             if (newState.sabotage?.id !== 'oxygen') pushed = false
             gameState = newState
         });
-    })
+    }
 </script>
 
-<Background />
-<main>
-    {#if gameState.sabotage?.id === 'oxygen'}
-        <Panel>
-            <p class="title flash-text">OXYGEN DEPLETING</p>
-            <p><Countdown endTime={gameState.sabotage.end}/>s</p>
-        </Panel>
-        <Panel>
-            <button onclick={down} class:pushed={pushed}>Fix</button>
-        </Panel>
-    {/if}
-</main>
+<Background/>
+{#if !socket}
+    <ChooseLobby onchoose={chooseLobby}/>
+{:else}
+    <main>
+        {#if gameState.sabotage?.id === 'oxygen'}
+            <Panel>
+                <p class="title flash-text">OXYGEN DEPLETING</p>
+                <p>
+                    <Countdown endTime={gameState.sabotage.end}/>
+                    s
+                </p>
+            </Panel>
+            <Panel>
+                <button onclick={down} class:pushed={pushed}>Fix</button>
+            </Panel>
+        {/if}
+    </main>
+{/if}
 
 <style>
     main {

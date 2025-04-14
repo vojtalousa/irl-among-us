@@ -6,55 +6,62 @@
     import Background from "../components/Background.svelte";
     import Panel from "../components/Panel.svelte";
     import GameOptions from "../components/GameOptions.svelte";
+    import ChooseLobby from "../components/ChooseLobby.svelte";
 
     let socket = $state(null)
     let gameState = $state({})
     $inspect(gameState)
 
-    onMount(() => {
-        socket = getSocket('admin')
+    const chooseLobby = (lobbyId) => {
+        socket = getSocket(lobbyId, 'admin')
         socket.on('sync-game', (newState) => {
             gameState = newState
         });
-    })
+    }
 </script>
 
 <Background/>
-<main>
-    {#if gameState.section === 'end'}
-        <End winners={gameState.winners}/>
-    {:else if gameState.section === 'lobby'}
-        <GameOptions socket={socket}/>
-    {:else}
-        {#if gameState.sabotage?.id !== 'comms'}
-            <Panel --padding-bottom="25px" --padding-top="18px"
-                   --padding-left="37px" --padding-right="37px">
-                <div class="task-progress">
-                    <p>{gameState.tasks?.done || 0}/{gameState.tasks?.total || 0} Tasků Hotovo</p>
-                    <progress max={gameState.tasks?.total || 0} value={gameState.tasks?.done || 0}></progress>
-                </div>
+{#if !socket}
+    <ChooseLobby onchoose={chooseLobby}/>
+{:else}
+    <main>
+        {#if gameState.section === 'end'}
+            <End winners={gameState.winners}/>
+        {:else if gameState.section === 'lobby'}
+            <GameOptions socket={socket}/>
+        {:else}
+            {#if gameState.sabotage?.id !== 'comms'}
+                <Panel --padding-bottom="25px" --padding-top="18px"
+                       --padding-left="37px" --padding-right="37px">
+                    <div class="task-progress">
+                        <p>{gameState.tasks?.done || 0}/{gameState.tasks?.total || 0} Tasků Hotovo</p>
+                        <progress max={gameState.tasks?.total || 0} value={gameState.tasks?.done || 0}></progress>
+                    </div>
+                </Panel>
+            {/if}
+            <Panel>
+                {#if gameState.sabotage}
+                    <p class="flash-text">
+                        Sabotáž: {gameState.sabotage.id} (
+                        <Countdown endTime={gameState.sabotage.end}/>
+                        s)
+                    </p>
+                {:else if gameState.section === 'meeting-wait'}
+                    <p class="meeting-call-title flash-text">Emergency Meeting</p>
+                    <button onclick={() => socket.emit('start-meeting')}>Všichni jsou tady</button>
+                {:else if gameState.section === 'meeting'}
+                    <p>Probíhá hlasování...</p>
+                {:else if gameState.section === 'game'}
+                    <div class="meeting-button-container">
+                        <button onclick={() => socket.emit('emergency-meeting')}>Emergency Meeting</button>
+                    </div>
+                {:else}
+                    <p>Načítání...</p>
+                {/if}
             </Panel>
         {/if}
-        <Panel>
-            {#if gameState.sabotage}
-                <p class="flash-text">
-                    Sabotáž: {gameState.sabotage.id} (<Countdown endTime={gameState.sabotage.end}/>s)
-                </p>
-            {:else if gameState.section === 'meeting-wait'}
-                <p class="meeting-call-title flash-text">Emergency Meeting</p>
-                <button onclick={() => socket.emit('start-meeting')}>Všichni jsou tady</button>
-            {:else if gameState.section === 'meeting'}
-                <p>Probíhá hlasování...</p>
-            {:else if gameState.section === 'game'}
-                <div class="meeting-button-container">
-                    <button onclick={() => socket.emit('emergency-meeting')}>Emergency Meeting</button>
-                </div>
-            {:else}
-                <p>Načítání...</p>
-            {/if}
-        </Panel>
-    {/if}
-</main>
+    </main>
+{/if}
 
 <style>
     main {
